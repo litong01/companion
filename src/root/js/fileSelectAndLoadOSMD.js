@@ -1,13 +1,11 @@
 
 var audioCtx = new(window.AudioContext || window.webkitAudioContext)();
 
-function playNote(halftone, duration) {
+function playNote(frequency, duration) {
   // create Oscillator node
   var oscillator = audioCtx.createOscillator();
 
-  frequency = opensheetmusicdisplay.Pitch.calcFrequency(halftone);
-
-  oscillator.type = 'sine';
+  oscillator.type = 'square';
   oscillator.frequency.value = frequency; // value in hertz
   oscillator.connect(audioCtx.destination);
   oscillator.start();
@@ -32,8 +30,11 @@ function getAllNotesAndTime(theosmd) {
                 // make sure our note is not silent
                 if(note != null && note.halfTone != 0 && !note.isRest()){
                    allNotes.push({
+                      // "ori": note,
                       "note": note.halfTone+12, // see issue #224
-                      "time": iterator.currentTimeStamp.RealValue * 4
+                      "time": iterator.currentTimeStamp.RealValue * 4,
+                      "pitch": note.pitch,
+                      "length": note.length
                    })
                 }
            }
@@ -41,24 +42,31 @@ function getAllNotesAndTime(theosmd) {
         iterator.moveToNext()
     }
 
-    var notesIndex=1;
+    var notesIndex=0;
     function moveCursorAtTime() {
-        if (notesIndex < allNotes.length) {
-            theosmd.cursor.next();
-            playNote(allNotes[notesIndex].note, 
-                (allNotes[notesIndex].time - allNotes[notesIndex-1].time)*1000);
+        var startIndex = notesIndex;
+        do {
+            var currentNote = allNotes[notesIndex];
+            playNote(currentNote.pitch.frequency,
+                currentNote.length.realValue * currentNote.length.numerator *
+                8000 / currentNote.length.denominator );
             notesIndex++;
-            if (notesIndex < allNotes.length) {
-                duration = (allNotes[notesIndex].time - allNotes[notesIndex-1].time)*1000;    
-                setTimeout(moveCursorAtTime, duration);
-            }
+        } while (notesIndex < allNotes.length && allNotes[notesIndex].time == allNotes[startIndex].time)
+
+        if (startIndex > 0) {
+            theosmd.cursor.next();
+        }
+
+        if (notesIndex < allNotes.length) {
+            duration = (allNotes[notesIndex].time - allNotes[startIndex].time) * 1000
+            setTimeout(moveCursorAtTime, duration);
         }
     }
 
     theosmd.cursor.reset();
     theosmd.cursor.show();
-    playNote(allNotes[0].note, allNotes[1].time);
-    setTimeout(moveCursorAtTime, allNotes[notesIndex].time * 1000);
+    // console.log(allNotes);
+    moveCursorAtTime();
 }
 
 function handleFileSelect(evt) {
