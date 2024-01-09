@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Tong Li</title>
+    <meta name="description" content="A showcase for OpenSheetMusicDisplay.">
+    <meta name="author" content="OpenSheetMusicDisplay contributors">
+    <link rel="icon" href="/favicon.ico?" type="image/x-icon"/>
+</head>
+<body>
+
+<script src="/js/opensheetmusicdisplay.1.4.3.min.js" type="application/javascript"></script>
+<script type="application/javascript">
+
+// Define an array of time intervals in milliseconds
+const intervals = [1000, 2000, 3000, 4000, 5000];
+
+// Define a function that prints the current time
+function printTime() {
+  const date = new Date();
+  console.log(date.toLocaleTimeString());
+  console.log(performance.now())
+}
+
+// Define a variable to store the start time
+let start;
+let handler;
+
+// Define a function that requests the next animation frame and checks the elapsed time
+function loop(timestamp) {
+  // If start is undefined, assign the current timestamp to it
+  if (!start) start = timestamp;
+
+  // Calculate the elapsed time
+  let elapsed = timestamp - start;
+
+  // Check if the elapsed time is equal to or greater than one second
+  if (elapsed >= 1000) {
+    // Print the current time
+    // printTime();
+    cancelAnimationFrame(handler)
+  } else {
+    // console.log(performance.now())
+    handler =  requestAnimationFrame(loop)
+  }
+
+  console.log("============")
+  console.log(performance.now())
+  console.log(timestamp)
+}
+
+// Start the loop
+requestAnimationFrame(loop);
+
+
+</script>
+
+</body>
+</html>
