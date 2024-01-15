@@ -18,46 +18,47 @@ function playNote(frequency, duration) {
     }, duration );
 }
 
-function play() {
-  var notesIndex=0
+function playNotesMoveCursor() {
   if (!audioCtx) {
     audioCtx = new(window.AudioContext || window.webkitAudioContext)();
   }
+
   var theButton = document.getElementById("playbutton")
 
-  osmd.cursor.reset();
+  iterator = osmd.cursor.Iterator
+  if (!iterator.EndReached){
+    voices = iterator.CurrentVoiceEntries;
+    // so currently we will only play the current voice first entry of the first note
+    notes = voices[0].Notes
+    note = notes[0]
+    console.log("=======note", note)
+    noteDuration = 240000 * note.length.realValue / note.sourceMeasure.tempoInBPM
+    
 
-  const iterator = osmd.cursor.Iterator;
+    if (note.pitch) {
+      oscillator = audioCtx.createOscillator();
+      oscillator.type = 'square';
+      oscillator.connect(audioCtx.destination);
+      oscillator.frequency.value = note.pitch.frequency; // value in hertz
+      oscillator.start();
+      // stop playing the note
+      setTimeout(function() {oscillator.stop()}, noteDuration)
+    }
 
-  function playNotesMoveCursor() {
-    if (!iterator.EndReached){
-      voices = iterator.CurrentVoiceEntries;
-      // so currently we will only play the current voice first entry of the first note
-      notes = voices[0].Notes
-      note = notes[0]
-      console.log("=======note", note)
-      noteDuration = 240000 * note.length.realValue / note.sourceMeasure.tempoInBPM
-      
-
-      if (note.pitch) {
-        oscillator = audioCtx.createOscillator();
-        oscillator.type = 'square';
-        oscillator.connect(audioCtx.destination);
-        oscillator.frequency.value = note.pitch.frequency; // value in hertz
-        oscillator.start();
-        // stop playing the note
-        setTimeout(function() {oscillator.stop()}, noteDuration)
-      }
-
-      //process the next note
+    //process the next note when the button still is showing "Stop"
+    if (theButton.innerText == "Stop") {
       setTimeout(function() {
         osmd.cursor.next()
-        playNotesMoveCursor()}, noteDuration)
-    } else {
-      theButton.innerText = "Play"  
+        playNotesMoveCursor()}, noteDuration)  
     }
+  } else {
+    theButton.innerText = "Play"
+    osmd.cursor.reset();
   }
+}
 
+function play() {
+  var theButton = document.getElementById("playbutton")
   if (theButton.innerText == "Play") {
     theButton.innerText = "Stop"
     playNotesMoveCursor()
@@ -86,27 +87,26 @@ function handleFileSelect(evt) {
     var reader = new FileReader();
 
     reader.onload = function(e) {
-        osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay("osmdCanvas", {
-          // set options here
-          backend: "svg",
-          drawFromMeasureNumber: 1,
-          drawUpToMeasureNumber: Number.MAX_SAFE_INTEGER // draw all measures, up to the end of the sample
-        });
-        osmd
-          .load(e.target.result)
-          .then(
-            function() {
-              window.osmd = osmd; // give access to osmd object in Browser console, e.g. for osmd.setOptions()
-              //console.log("e.target.result: " + e.target.result);
-              osmd.FollowCursor = true;
-              osmd.render();
-              osmd.cursor.show(); // this would show the cursor on the first note
-              // osmd.cursor.next(); // advance the cursor one note
-              // getAllNotesAndTime(osmd);
-              document.getElementById("playbutton").addEventListener("click", play)
-              document.getElementById("playbutton").innerHTML = "Play"
-            }
-          );
+      osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay("osmdCanvas", {
+        // set options here
+        backend: "svg",
+        drawFromMeasureNumber: 1,
+        drawUpToMeasureNumber: Number.MAX_SAFE_INTEGER // draw all measures, up to the end of the sample
+      });
+      osmd.load(e.target.result)
+        .then(
+          function() {
+            window.osmd = osmd; // give access to osmd object in Browser console, e.g. for osmd.setOptions()
+            //console.log("e.target.result: " + e.target.result);
+            osmd.FollowCursor = true;
+            osmd.render();
+            osmd.cursor.show(); // this would show the cursor on the first note
+            document.getElementById("playbutton").addEventListener("click", play)
+            document.getElementById("playbutton").innerHTML = "Play"
+
+            console.log("===================osmd", osmd)
+          }
+        );
     };
 
     if (file.name.match('.*\.mxl')) {
